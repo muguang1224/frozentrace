@@ -1,4 +1,4 @@
-"""A tiny demo agent for the README and for `agentvcr determinism`.
+"""A tiny demo agent for the README and for `frozentrace determinism`.
 
 Record a run:
 
@@ -6,7 +6,7 @@ Record a run:
 
 Then prove replay is deterministic no matter how the concurrent calls finish:
 
-    agentvcr determinism demo.json -- python examples/agent_demo.py
+    frozentrace determinism demo.json -- python examples/agent_demo.py
 """
 
 from __future__ import annotations
@@ -15,10 +15,10 @@ import argparse
 import asyncio
 import random
 
-import agentvcr
+import frozentrace
 
 
-@agentvcr.intercept(kind="llm", name="call_model")
+@frozentrace.intercept(kind="llm", name="call_model")
 async def call_model(prompt):
     return {
         "text": f"answer: {prompt}",
@@ -44,14 +44,14 @@ def main():
 
     topics = ["math", "geography", "history"]
     if args.record:
-        with agentvcr.record(args.record):
+        with frozentrace.record(args.record):
             asyncio.run(agent(topics))
         print(f"recorded -> {args.record}")
         return
 
-    # Under `agentvcr determinism` this reads AGENTVCR_REPLAY; otherwise it is a
+    # Under `frozentrace determinism` this reads FROZENTRACE_REPLAY; otherwise it is a
     # no-op and the real functions run.
-    with agentvcr.replay_from_env():
+    with frozentrace.replay_from_env():
         result = asyncio.run(agent(topics))
     print(result)
 

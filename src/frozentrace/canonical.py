@@ -1,6 +1,6 @@
 """Canonicalisation and call signatures.
 
-The signature is the heart of agentvcr's order-independence. Two calls with the
+The signature is the heart of frozentrace's order-independence. Two calls with the
 same ``kind``, ``name`` and arguments produce the same signature no matter *when*
 they happen, so replay does not have to care about the order in which an agent's
 calls complete.

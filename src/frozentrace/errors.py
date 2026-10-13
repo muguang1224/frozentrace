@@ -1,10 +1,10 @@
-"""Exception types for agentvcr."""
+"""Exception types for frozentrace."""
 
 from __future__ import annotations
 
 
 class AgentVcrError(Exception):
-    """Base class for all agentvcr errors."""
+    """Base class for all frozentrace errors."""
 
 
 class TraceNotFound(AgentVcrError):
@@ -15,7 +15,7 @@ class ReplayMiss(AgentVcrError):
     """Raised during replay when the agent makes a call that was never recorded.
 
     This is the loud failure that makes replay trustworthy: instead of silently
-    returning ``None`` or calling the real (networked) function, agentvcr stops.
+    returning ``None`` or calling the real (networked) function, frozentrace stops.
     """
 
 

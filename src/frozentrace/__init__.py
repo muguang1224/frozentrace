@@ -1,6 +1,6 @@
-"""agentvcr — deterministic record & replay for AI agent runs.
+"""frozentrace — deterministic record & replay for AI agent runs.
 
-Unlike VCR-style tools that match calls by *position*, agentvcr matches by a
+Unlike VCR-style tools that match calls by *position*, frozentrace matches by a
 stable call signature, so a run replays identically **even when the agent runs
 its calls concurrently** (``asyncio.gather``, threads) or streams responses.
 """

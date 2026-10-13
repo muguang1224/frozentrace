@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentvcr"
+name = "frozentrace"
 version = "0.1.0"
 description = "Deterministic record & replay for AI agent runs — stable even under concurrency and streaming."
 readme = "README.md"
@@ -31,12 +31,12 @@ dependencies = []
 dev = ["pytest>=7"]
 
 [project.urls]
-Homepage = "https://github.com/muguang1224/agentvcr"
-Repository = "https://github.com/muguang1224/agentvcr"
-Issues = "https://github.com/muguang1224/agentvcr/issues"
+Homepage = "https://github.com/muguang1224/frozentrace"
+Repository = "https://github.com/muguang1224/frozentrace"
+Issues = "https://github.com/muguang1224/frozentrace/issues"
 
 [project.scripts]
-agentvcr = "agentvcr.cli:main"
+frozentrace = "frozentrace.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

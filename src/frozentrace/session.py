@@ -115,7 +115,7 @@ class Recorder(Session):
                 "recorded_at": _now_iso(),
                 "model": self.model,
                 "redacts": list(self.redact),
-                "recorder": "agentvcr",
+                "recorder": "frozentrace",
             },
         )
 
@@ -282,7 +282,7 @@ def replay(path, *, strict: bool = False):
 
 
 @contextmanager
-def replay_from_env(var: str = "AGENTVCR_REPLAY", strict=None):
+def replay_from_env(var: str = "FROZENTRACE_REPLAY", strict=None):
     """Replay the trace named by an env var, if set. Otherwise a no-op.
 
     Lets a CLI drive a user's script into replay mode without code changes.
@@ -292,6 +292,6 @@ def replay_from_env(var: str = "AGENTVCR_REPLAY", strict=None):
         yield None
         return
     if strict is None:
-        strict = os.environ.get("AGENTVCR_STRICT", "").lower() not in ("", "0", "false", "no")
+        strict = os.environ.get("FROZENTRACE_STRICT", "").lower() not in ("", "0", "false", "no")
     with replay(path, strict=strict) as player:
         yield player

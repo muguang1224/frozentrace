@@ -10,7 +10,7 @@ from typing import Any, Optional
 
 from . import errors
 
-FORMAT = "agentvcr/1"
+FORMAT = "frozentrace/1"
 
 
 def _now_iso() -> str:

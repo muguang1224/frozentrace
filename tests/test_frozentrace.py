@@ -8,9 +8,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pytest
 
-import agentvcr
-from agentvcr import DivergenceError, ReplayMiss, Trace
-from agentvcr.cli import main as cli_main
+import frozentrace
+from frozentrace import DivergenceError, ReplayMiss, Trace
+from frozentrace.cli import main as cli_main
 
 # --------------------------------------------------------------------------- #
 # seams, wrapped once at import
@@ -18,41 +18,41 @@ from agentvcr.cli import main as cli_main
 _COUNTED = {"n": 0}
 
 
-@agentvcr.intercept(kind="llm", name="model")
+@frozentrace.intercept(kind="llm", name="model")
 def model(prompt):
     return {"text": prompt.upper(), "usage": {"prompt_tokens": 3, "output_tokens": 5}}
 
 
-@agentvcr.intercept(kind="llm", name="amodel")
+@frozentrace.intercept(kind="llm", name="amodel")
 async def amodel(prompt):
     return {"text": f"async:{prompt}", "usage": {"prompt_tokens": 2, "output_tokens": 4}}
 
 
-@agentvcr.intercept(kind="tool", name="slow_tool")
+@frozentrace.intercept(kind="tool", name="slow_tool")
 def slow_tool(x):
     time.sleep(random.random() * 0.005)  # inside the seam: recorded latency
     return {"x": x, "double": x * 2}
 
 
-@agentvcr.intercept(kind="tool", name="counted")
+@frozentrace.intercept(kind="tool", name="counted")
 def counted(x):
     _COUNTED["n"] += 1
     return x
 
 
-@agentvcr.intercept(kind="llm", name="stream_model")
+@frozentrace.intercept(kind="llm", name="stream_model")
 def stream_model(prompt):
     for token in prompt.split():
         yield {"token": token}
 
 
-@agentvcr.intercept(kind="llm", name="astream_model")
+@frozentrace.intercept(kind="llm", name="astream_model")
 async def astream_model(prompt):
     for token in prompt.split():
         yield {"token": token}
 
 
-@agentvcr.intercept(kind="tool", name="kw_tool")
+@frozentrace.intercept(kind="tool", name="kw_tool")
 def kw_tool(**kwargs):
     return {"ok": True}
 
@@ -87,34 +87,34 @@ def test_passthrough_without_session():
 
 def test_roundtrip_sync(tmp_path):
     path = str(tmp_path / "t.json")
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         recorded = model("hello")
     assert recorded == {"text": "HELLO", "usage": {"prompt_tokens": 3, "output_tokens": 5}}
-    with agentvcr.replay(path):
+    with frozentrace.replay(path):
         assert model("hello") == recorded
 
 
 def test_replay_does_not_call_real_function(tmp_path):
     path = str(tmp_path / "t.json")
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         counted(1)
     before = _COUNTED["n"]
-    with agentvcr.replay(path):
+    with frozentrace.replay(path):
         counted(1)
     assert _COUNTED["n"] == before  # real function never ran during replay
 
 
 def test_async_roundtrip(tmp_path):
     path = str(tmp_path / "t.json")
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         recorded = asyncio.run(amodel("x"))
-    with agentvcr.replay(path):
+    with frozentrace.replay(path):
         assert asyncio.run(amodel("x")) == recorded
 
 
 def test_usage_tokens_captured(tmp_path):
     path = str(tmp_path / "t.json")
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         model("a")
     trace = Trace.load(path)
     assert trace.total_input_tokens == 3
@@ -128,11 +128,11 @@ def test_usage_tokens_captured(tmp_path):
 def test_order_independent_concurrent_async(tmp_path):
     path = str(tmp_path / "t.json")
     topics = ["a", "b", "c", "d", "e", "f"]
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         recorded = asyncio.run(_concurrent_agent(topics))
     assert recorded == {t: f"async:{t}" for t in topics}
 
-    out = agentvcr.assert_deterministic(
+    out = frozentrace.assert_deterministic(
         lambda: asyncio.run(_concurrent_agent(topics)), path, repeats=40
     )
     assert out == recorded
@@ -141,11 +141,11 @@ def test_order_independent_concurrent_async(tmp_path):
 def test_order_independent_threads(tmp_path):
     path = str(tmp_path / "t.json")
     items = list(range(12))
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         recorded = _threaded(items)
     assert recorded == {i: i * 2 for i in items}
 
-    out = agentvcr.assert_deterministic(lambda: _threaded(items), path, repeats=40)
+    out = frozentrace.assert_deterministic(lambda: _threaded(items), path, repeats=40)
     assert out == recorded
 
 
@@ -154,10 +154,10 @@ def test_order_independent_threads(tmp_path):
 # --------------------------------------------------------------------------- #
 def test_streaming_roundtrip(tmp_path):
     path = str(tmp_path / "t.json")
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         recorded = list(stream_model("hello world"))
     assert recorded == [{"token": "hello"}, {"token": "world"}]
-    with agentvcr.replay(path):
+    with frozentrace.replay(path):
         assert list(stream_model("hello world")) == recorded
 
 
@@ -167,10 +167,10 @@ def test_async_streaming_roundtrip(tmp_path):
     async def consume(prompt):
         return [chunk async for chunk in astream_model(prompt)]
 
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         recorded = asyncio.run(consume("aa bb cc"))
     assert recorded == [{"token": "aa"}, {"token": "bb"}, {"token": "cc"}]
-    with agentvcr.replay(path):
+    with frozentrace.replay(path):
         assert asyncio.run(consume("aa bb cc")) == recorded
 
 
@@ -179,29 +179,29 @@ def test_async_streaming_roundtrip(tmp_path):
 # --------------------------------------------------------------------------- #
 def test_replay_miss(tmp_path):
     path = str(tmp_path / "t.json")
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         model("only")
     with pytest.raises(ReplayMiss):
-        with agentvcr.replay(path):
+        with frozentrace.replay(path):
             model("something-else")
 
 
 def test_strict_divergence_on_unreplayed_call(tmp_path):
     path = str(tmp_path / "t.json")
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         model("a")
         model("b")
     with pytest.raises(DivergenceError):
-        with agentvcr.replay(path, strict=True):
+        with frozentrace.replay(path, strict=True):
             model("a")  # never replays "b"
 
 
 def test_non_strict_allows_partial_replay(tmp_path):
     path = str(tmp_path / "t.json")
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         model("a")
         model("b")
-    with agentvcr.replay(path):  # best-effort: no error
+    with frozentrace.replay(path):  # best-effort: no error
         assert model("a")["text"] == "A"
 
 
@@ -210,7 +210,7 @@ def test_non_strict_allows_partial_replay(tmp_path):
 # --------------------------------------------------------------------------- #
 def test_redaction_at_save(tmp_path):
     path = str(tmp_path / "t.json")
-    with agentvcr.record(path, redact=["api_key"]):
+    with frozentrace.record(path, redact=["api_key"]):
         kw_tool(api_key="s3cr3t-value", query="hi")
     raw = json.dumps(Trace.load(path).to_dict())
     assert "s3cr3t-value" not in raw
@@ -222,7 +222,7 @@ def test_redaction_at_save(tmp_path):
 # --------------------------------------------------------------------------- #
 def test_cli_inspect(tmp_path, capsys):
     path = str(tmp_path / "t.json")
-    with agentvcr.record(path):
+    with frozentrace.record(path):
         model("a")
     assert cli_main(["inspect", path]) == 0
     data = json.loads(capsys.readouterr().out)
@@ -232,9 +232,9 @@ def test_cli_inspect(tmp_path, capsys):
 
 def test_cli_diff_identical(tmp_path, capsys):
     a, b = str(tmp_path / "a.json"), str(tmp_path / "b.json")
-    with agentvcr.record(a):
+    with frozentrace.record(a):
         model("x")
-    with agentvcr.record(b):
+    with frozentrace.record(b):
         model("x")
     assert cli_main(["diff", a, b]) == 0
     data = json.loads(capsys.readouterr().out)

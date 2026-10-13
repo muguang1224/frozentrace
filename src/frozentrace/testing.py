@@ -8,7 +8,7 @@ from .session import replay
 def assert_deterministic(run, trace_path, *, repeats: int = 20, strict: bool = True):
     """Run ``run()`` ``repeats`` times under replay and assert identical results.
 
-    This is the measurable guarantee agentvcr exists to provide. If the agent
+    This is the measurable guarantee frozentrace exists to provide. If the agent
     schedules its work non-deterministically (e.g. concurrent tool calls that
     finish in a different order each time), signature-based replay still yields
     the same result on every run — and this helper proves it.

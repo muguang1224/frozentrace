@@ -1,8 +1,8 @@
-"""agentvcr command line interface.
+"""frozentrace command line interface.
 
-    agentvcr inspect      TRACE          summarise a recorded run
-    agentvcr diff         A B            compare two runs
-    agentvcr determinism  TRACE [--runs N] -- CMD
+    frozentrace inspect      TRACE          summarise a recorded run
+    frozentrace diff         A B            compare two runs
+    frozentrace determinism  TRACE [--runs N] -- CMD
                                          replay CMD N times and check it is identical
 """
 
@@ -36,15 +36,15 @@ def cmd_determinism(args) -> int:
         command = command[1:]
     if not command:
         print(
-            "error: no command given. Usage: agentvcr determinism TRACE -- python agent.py",
+            "error: no command given. Usage: frozentrace determinism TRACE -- python agent.py",
             file=sys.stderr,
         )
         return 2
 
     env = dict(os.environ)
-    env["AGENTVCR_REPLAY"] = os.path.abspath(args.trace)
+    env["FROZENTRACE_REPLAY"] = os.path.abspath(args.trace)
     if args.strict:
-        env["AGENTVCR_STRICT"] = "1"
+        env["FROZENTRACE_STRICT"] = "1"
 
     outputs = []
     for i in range(args.runs):
@@ -71,9 +71,9 @@ def cmd_determinism(args) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="agentvcr", description="Deterministic record & replay for AI agents."
+        prog="frozentrace", description="Deterministic record & replay for AI agents."
     )
-    parser.add_argument("--version", action="version", version=f"agentvcr {__version__}")
+    parser.add_argument("--version", action="version", version=f"frozentrace {__version__}")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("inspect", help="summarise a recorded run")
