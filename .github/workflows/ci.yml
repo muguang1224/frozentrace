@@ -6,6 +6,10 @@ on:
   schedule:
     - cron: "23 4 * * 1"
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: test ${{ matrix.os }} py${{ matrix.python-version }}
@@ -13,8 +17,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Full Python version matrix on Linux.
+        os: [ubuntu-latest]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        include:
+          # Cross-platform check on a stable Python. One job per OS: GitHub-hosted
+          # macOS runners are scarce and queue for a long time, so a 5-way macOS
+          # matrix can sit pending for 15+ minutes and get cancelled.
+          - { os: windows-latest, python-version: "3.12" }
+          - { os: macos-latest, python-version: "3.12" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
